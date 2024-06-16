@@ -1,0 +1,99 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    # "master"は自身のブランチを選択して入力
+    branches: [ master ]
+
+jobs:
+  continous-integration:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step1
+      - uses: actions/checkout@v2
+
+      # Step2 Pythonのセットアップ (Pythonは3.8)
+      - name: Python Setup
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+          architecture: x64
+
+      # Step3　venv環境のインストール
+      - name: Install Python Virtual Env
+        run: pip3 install virtualenv
+
+      # Step4
+      - name: Setup Virtual env
+        uses: actions/cache@v2
+        id: cache-venv
+        with:
+          path: venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
+
+      # Step5 venvに依存ライブラリのインストール
+      - name: Activate and Install Depencies into Virtual env
+        run: python -m venv venv && source venv/bin/activate && pip3 install -r requirements.txt
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+
+      # Step6 作成した実行環境でPytestを行う
+      - name: Activate venv and Run Test
+        run: . venv/bin/activate && pytest
+
+      # Step7　依存関係をZIPファイル化
+      - name: Create Zipfile archive of Dependencies
+        run: |
+          cd ./venv/lib/python3.8/site-packages
+          zip -r9 ../../../../temp.zip .
+
+      # Step8 アプリケーションをZipファイル化
+      - name: Add App to Zip file
+        run: unzip temp.zip && zip -g api.zip -r .
+
+      # Step9 GithubActionのストレージにapi.zipとしてアップロード
+      - name: Upload zip file artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: api
+          path: api.zip
+
+  # api.zipをs3にPutする
+  continuous-deployment:
+    runs-on: ubuntu-latest
+    needs: [continous-integration]
+    # refs/heads/masterの"master"部分は自身のブランチを選択して変更
+    if: github.ref == 'refs/heads/master'
+    steps:
+      # Step 1
+      - name: Install AWS CLI
+        uses: unfor19/install-aws-cli-action@v1
+        with:
+          version: 1
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+      # Step 2
+      - name: Download Lambda api.zip
+        uses: actions/download-artifact@v2
+        with:
+          name: api
+      # Step 3
+      - name: Upload to S3
+        # <YourS3Bucket>の部分は自身のS3のバケット名を入れる
+        run: aws s3 cp api.zip s3://<YourS3Bucket>/api.zip
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+      # Step 4
+      - name: Deploy new Lambda
+        # # <YourLambdaName>の部分は自身の作成したLambda名を入れる, <YourS3Bucket>の部分は自身のS3のバケット名を入れる
+        run: aws lambda update-function-code --function-name <YourLambdaName> --s3-bucket <YourS3Bucket> --s3-key api.zip
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
