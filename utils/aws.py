@@ -15,7 +15,8 @@ def sample():
     modelId = 'anthropic.claude-v2'
     accept = 'application/json'
     contentType = 'application/json'
-
+    # StreamResponseにしたい
+    # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-runtime/client/invoke_model_with_response_stream.html
     response = bedrock.invoke_model(body=body, modelId=modelId, accept=accept, contentType=contentType)
     response_body = json.loads(response.get('body').read())
 

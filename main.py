@@ -63,6 +63,16 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: int 
         if not room.players:
             rooms.pop(room_id)
 
+@app.post("/prompt")
+async def generate_text(prompt: str):
+    # StreamResponseにしたい
+    # https://engineers.safie.link/entry/2022/11/14/fastapi-streaming-response
+    return {"prompt": prompt}
+
+@app.post("/image")
+async def generate_image():
+    return {"image": "image"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
