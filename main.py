@@ -112,7 +112,8 @@ async def generate_text(purpose: str | None = None, category: str | None = None,
         raise HTMLResponse(status_code=422, content="Please specify at least one parameter.")
     # StreamResponseにしたい
     # https://engineers.safie.link/entry/2022/11/14/fastapi-streaming-response
-    return
+    text = generate_text(purpose, category, overnight, background_color, belongings)
+    return text
 
 @app.post("/image")
 async def generate_image(prompt: str):
