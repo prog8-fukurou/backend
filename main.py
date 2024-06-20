@@ -1,6 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketException, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 import random
+from utils.aws import generate_image, generate_text
 
 app = FastAPI()
 
@@ -114,8 +115,9 @@ async def generate_text(purpose: str | None = None, category: str | None = None,
     return
 
 @app.post("/image")
-async def generate_image():
-    return {"image": "image"}
+async def generate_image(prompt: str):
+    image = generate_image(prompt) # base64生成
+    return image
 
 @app.get("/image")
 async def get_image(room_id: str, client_id: str | None = None):
