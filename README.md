@@ -6,6 +6,9 @@
 
 ```bash
 pip install -r requirements.txt
+pip3 install -r requirements.txt (上のコマンドが実行できない場合)
+python main.py
+python3 main.py (上のコマンドが実行できない場合)
 ```
 
 ## エンドポイント
