@@ -67,14 +67,18 @@ generated_images = {}
 async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: int | None = None):
     await ws_manager.connect(websocket, client_id)
     if room_id is None:
-        room_id = random.randint(1000, 9999)
-        await websocket.send_text(f"system > Your room ID is: {room_id}")
+        def generate_room_id():
+            room_id = random.randint(1000, 9999)
+            if room_id in rooms:
+                room_id = generate_room_id()
+            return room_id
+        room_id = generate_room_id()
+        await websocket.send_text(f"room-init:{room_id}")
 
     if room_id not in rooms:
         rooms[room_id] = Room(room_id, client_id)
     room = rooms[room_id]
     room.add_player(client_id)
-    await room.broadcast_message(f"system > New player in the room: {client_id}")
 
     try:
         while True:
