@@ -86,7 +86,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: int 
             msg = await websocket.receive_text()
             match msg.split(":")[0]:
                 case "user-init":
-                    await websocket.broadcast_message(f"{client_id}:{msg.split(':')[1]}")
+                    await room.broadcast_message(f"{client_id}:{msg.split(':')[1]}")
                 case "user-ready":
                     room.readied.add(client_id)
                     if len(room.readied) == len(room.players):
