@@ -6,6 +6,13 @@
 
 ### HTTP
 
+#### GET /image
+
+| param | type | desc |
+| -- | -- | -- |
+| room_id | str | |
+| client_id | str | optional |
+
 #### POST /prompt → str
 
 | param | type | desc |
@@ -35,20 +42,32 @@
 
 #### 固定コマンド
 
-##### game-start:{role}
+#### user-init:{user_name}
 
-role: Master or Player
+**サーバー** → クライアント
 
-サーバー→全クライアント
+ユーザー参加時に「client_id:user_name」の形式で送信
+
+#### user-ready
+
+**クライアント** → サーバー
+
+準備ができたら送る
+
+##### game-start:{client_id(master)}
+
+masterに選ばれたユーザーのIDを送信
+
+**サーバー** → クライアント
 クライアント側で時間計ってほしい
 
 ##### game-end
 
-クライアント→サーバー
+**クライアント** → サーバー
 
 #### vote-start
 
-サーバー→全クライアント
+**サーバー** → 全クライアント
 
 game-endコマンド受信時にほかのすべてのクライアントがゲームを終了していたらvote-startを配信
 
@@ -57,7 +76,13 @@ game-endコマンド受信時にほかのすべてのクライアントがゲー
 
 #### vote-end:{client_id}
 
-サーバー側処理なし
+**クライアント** → サーバー
+
+#### winner:{client_id}
+
+**サーバー** → クライアント
+
+勝者のclient_idを配信
 
 ## サーバー側で保持するデータ
 
@@ -67,13 +92,3 @@ client_id, room_id
 ソース参照
 
 ### ゲーム本体関係
-
-```python
-{
-    "{client_id}": {
-        "playing": bool,
-        "image": str,
-        "master": bool
-    }
-}
-```
