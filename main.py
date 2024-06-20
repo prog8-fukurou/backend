@@ -26,6 +26,7 @@ class Room:
         self.readied = set() # 準備ができたプレイヤー
         self.gameend_players = set() # ゲームを終了したプレイヤー
         self.voteend_players = set() # 投票を終了したプレイヤー
+        self.voted_players = [] # 投票結果
 
     def add_player(self, client_id):
         self.players.add(client_id)
@@ -42,6 +43,7 @@ class Room:
     
     def add_voteend_player(self, client_id, vote_id: str):
         self.voteend_players.add(client_id)
+        self.voted_players.append(vote_id)
         if len(self.voteend_players) == len(self.players):
             return True
         else:
@@ -100,7 +102,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: int 
         rooms.pop(room_id)
 
 @app.post("/prompt")
-async def generate_text(client_id: str, purpose: str | None = None, category: str | None = None, overnight: bool | None = None, background_color: str | None = None, belongings: str | None = None):
+async def generate_text(purpose: str | None = None, category: str | None = None, overnight: bool | None = None, background_color: str | None = None, belongings: str | None = None):
     if purpose is None and category is None and overnight is None and background_color is None and belongings is None:
         raise HTMLResponse(status_code=422, content="Please specify at least one parameter.")
     # StreamResponseにしたい
