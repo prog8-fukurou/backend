@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketException, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketException, WebSocketDisconnect, UploadFile, File
 from fastapi.responses import HTMLResponse
 import random
 from utils.aws import generate_image, generate_text
@@ -128,6 +128,11 @@ async def get_image(room_id: str, client_id: str | None = None):
         return generated_images[room_id]
     else:
         return generated_images[room_id][client_id]
+
+@app.post("/result")
+async def post_result(room_id: str, image: UploadFile = File()):
+    generated_images[room_id] = image
+    return "OK"
 
 if __name__ == "__main__":
     import uvicorn

@@ -55,12 +55,6 @@ python3 main.py (上のコマンドが実行できない場合)
 
 **サーバー** → クライアント
 
-#### user-init:{user_name}
-
-**サーバー** → クライアント
-
-ユーザー参加時に「client_id:user_name」の形式で送信
-
 #### user-ready
 
 **クライアント** → サーバー
@@ -73,6 +67,12 @@ masterに選ばれたユーザーのIDを送信
 
 **サーバー** → クライアント
 クライアント側で時間計ってほしい
+
+#### user-init:{user_name}
+
+**サーバー** → クライアント
+
+ユーザー参加時に「client_id:user_name」の形式で送信
 
 ##### game-end
 
