@@ -98,9 +98,9 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: int 
                     if flag:
                         await room.broadcast_message("vote-start")
                 case "vote-end":
-                    flag = room.add_voteend_player(client_id)
-                    if flag:
-                        await room.broadcast_message(f"result:{msg.split(':')[1]}")
+                    #flag = room.add_voteend_player(client_id)
+                    #if flag:
+                    await room.broadcast_message(f"result:{msg.split(':')[1]}")
                 case _:
                     await room.broadcast_message(msg)
     
