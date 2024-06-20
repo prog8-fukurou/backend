@@ -1,5 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketException, WebSocketDisconnect, UploadFile, File
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, WebSocket, WebSocketException, WebSocketDisconnect, UploadFile, File, HTTPException
 import random
 from utils.aws import generate_image, generate_text
 
@@ -111,7 +110,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: int 
 @app.post("/prompt")
 async def generate_text(purpose: str | None = None, category: str | None = None, overnight: bool | None = None, background_color: str | None = None, belongings: str | None = None):
     if purpose is None and category is None and overnight is None and background_color is None and belongings is None:
-        raise HTMLResponse(status_code=422, content="Please specify at least one parameter.")
+        raise HTTPException(status_code=422, detail="Please specify at least one parameter.")
     # StreamResponseにしたい
     # https://engineers.safie.link/entry/2022/11/14/fastapi-streaming-response
     text = generate_text(purpose, category, overnight, background_color, belongings)
