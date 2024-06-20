@@ -2,6 +2,12 @@
 
 [テンプレート]("https://github.com/foasho/fastapi-lambda")
 
+## セットアップ
+
+```bash
+pip install -r requirements.txt
+```
+
 ## エンドポイント
 
 ### HTTP
