@@ -1,6 +1,9 @@
 from fastapi import FastAPI, WebSocket, WebSocketException, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 import random
+import base64
+import json
+import boto3
 
 app = FastAPI()
 
@@ -71,7 +74,38 @@ async def generate_text(prompt: str):
 
 @app.post("/image")
 async def generate_image():
-    return {"image": "image"}
+    client = boto3.client(service_name="bedrock-runtime", region_name="us-east-1")
+    model_id = "amazon.titan-image-generator-v1"
+    seed = random.randint(0, 2147483647)
+    # ユーザから取得したもの
+    prompt = "京都の夜景"
+    # Format the request payload using the model's native structure.
+    native_request = {
+        "taskType": "TEXT_IMAGE",
+        "textToImageParams": {"text": prompt},
+        "imageGenerationConfig": {
+            "numberOfImages": 1,
+            "quality": "standard",
+            "cfgScale": 8.0,
+            "height": 512,
+            "width": 512,
+            "seed": seed,
+        },
+    }
+
+    # Convert the native request to JSON.
+    request = json.dumps(native_request)
+
+    # Invoke the model with the request.
+    response = client.invoke_model(modelId=model_id, body=request)
+
+    # Decode the response body.
+    model_response = json.loads(response["body"].read())
+
+    # Extract the image data.
+    base64_image_data = model_response["images"][0]
+        
+    return {"image": base64_image_data}
 
 if __name__ == "__main__":
     import uvicorn
