@@ -25,7 +25,12 @@ class ConnectionManager:
 class Room:
     def __init__(self, room_id):
         self.room_id = room_id
+        self.master = None
         self.players = set()
+        self.readied = set() # 準備ができたプレイヤー
+        self.gameend_players = set() # ゲームを終了したプレイヤー
+        self.voteend_players = set() # 投票を終了したプレイヤー
+        self.voted_players = [] # 投票結果
 
     def add_player(self, client_id):
         self.players.add(client_id)
@@ -33,53 +38,93 @@ class Room:
     def remove_player(self, client_id):
         self.players.remove(client_id)
 
+    def add_gameend_player(self, client_id):
+        self.gameend_players.add(client_id)
+        if len(self.gameend_players) == len(self.players):
+            return True
+        else:
+            return False
+    
+    def add_voteend_player(self, client_id, vote_id: str):
+        self.voteend_players.add(client_id)
+        self.voted_players.append(vote_id)
+        if len(self.voteend_players) == len(self.players):
+            return True
+        else:
+            return False
+
     async def broadcast_message(self, message):
-        print(self.players)
         for player in self.players:
             await ws_manager.send_personal_message(message, player)
 
 ws_manager = ConnectionManager()
 rooms = {}
+generated_images = {}
+#{
+#  "room_id": {
+#     "client_id": image,
+#  }
+#}
 
 # Websocket 通信
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: int | None = None):
     await ws_manager.connect(websocket, client_id)
-    print(f"Client {client_id} connected to the websocket")
     if room_id is None:
-        room_id = random.randint(1000, 9999)
-        await websocket.send_text(f"system > Your room ID is: {room_id}")
+        def generate_room_id():
+            room_id = random.randint(1000, 9999)
+            if room_id in rooms:
+                room_id = generate_room_id()
+            return room_id
+        room_id = generate_room_id()
+        await websocket.send_text(f"room-init:{room_id}")
 
     if room_id not in rooms:
         rooms[room_id] = Room(room_id)
-    print(rooms)
     room = rooms[room_id]
     room.add_player(client_id)
-    await room.broadcast_message(f"system > New player in the room: {client_id}")
 
     try:
         while True:
             msg = await websocket.receive_text()
-            print(f"Client {client_id} says: {msg}")
-            await room.broadcast_message(f"{client_id} > {msg}")
+            match msg.split(":")[0]:
+                case "user-init":
+                    await room.broadcast_message(f"{client_id}:{msg.split(':')[1]}")
+                case "user-ready":
+                    room.readied.add(client_id)
+                    if len(room.readied) == len(room.players):
+                        master_index = random.randint(0, len(room.players) - 1)
+                        room.master = list(room.players)[master_index]
+                        await room.broadcast_message(f"game-start:{room.master}")
+                case "game-end":
+                    flag = room.add_gameend_player(client_id)
+                    if flag:
+                        await room.broadcast_message("vote-start")
+                case "vote-end":
+                    #flag = room.add_voteend_player(client_id)
+                    #if flag:
+                    await room.broadcast_message(f"result:{msg.split(':')[1]}")
+                case _:
+                    await room.broadcast_message(msg)
+    
     except WebSocketDisconnect:
-        room.remove_player(client_id)
-        if not room.players:
-            rooms.pop(room_id)
+        await room.broadcast_message(f"game-interrupted")
+        rooms.pop(room_id)
 
 @app.post("/prompt")
-async def generate_text(prompt: str):
+async def generate_text(purpose: str | None = None, category: str | None = None, overnight: bool | None = None, background_color: str | None = None, belongings: str | None = None):
+    if purpose is None and category is None and overnight is None and background_color is None and belongings is None:
+        raise HTMLResponse(status_code=422, content="Please specify at least one parameter.")
     # StreamResponseにしたい
     # https://engineers.safie.link/entry/2022/11/14/fastapi-streaming-response
-    return {"prompt": prompt}
+    text = generate_text(purpose, category, overnight, background_color, belongings)
+    return text
 
 @app.post("/image")
-async def generate_image():
+async def generate_image(prompt: str):
     client = boto3.client(service_name="bedrock-runtime", region_name="us-east-1")
     model_id = "amazon.titan-image-generator-v1"
     seed = random.randint(0, 2147483647)
-    # ユーザから取得したもの
-    prompt = "京都の夜景"
     # Format the request payload using the model's native structure.
     native_request = {
         "taskType": "TEXT_IMAGE",
@@ -115,6 +160,13 @@ async def generate_image():
     #     file.write(image_data)
         
     return {"image": base64_image_data}
+
+@app.get("/image")
+async def get_image(room_id: str, client_id: str | None = None):
+    if client_id is None:
+        return generated_images[room_id]
+    else:
+        return generated_images[room_id][client_id]
 
 if __name__ == "__main__":
     import uvicorn

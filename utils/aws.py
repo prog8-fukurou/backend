@@ -23,8 +23,8 @@ def sample():
     # text
     print(response_body.get('completion'))
 
-def generate_text():
+def generate_text(prompt: str):
     pass
 
-def generate_image():
+def generate_image(prompt: str):
     pass
