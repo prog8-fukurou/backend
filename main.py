@@ -1,7 +1,10 @@
 from fastapi import FastAPI, WebSocket, WebSocketException, WebSocketDisconnect, UploadFile, File
 from fastapi.responses import HTMLResponse
 import random
-from utils.aws import generate_image, generate_text
+import base64
+import json
+import boto3
+import os
 
 app = FastAPI()
 
@@ -119,8 +122,44 @@ async def generate_text(purpose: str | None = None, category: str | None = None,
 
 @app.post("/image")
 async def generate_image(prompt: str):
-    image = generate_image(prompt) # base64生成
-    return image
+    client = boto3.client(service_name="bedrock-runtime", region_name="us-east-1")
+    model_id = "amazon.titan-image-generator-v1"
+    seed = random.randint(0, 2147483647)
+    # Format the request payload using the model's native structure.
+    native_request = {
+        "taskType": "TEXT_IMAGE",
+        "textToImageParams": {"text": prompt},
+        "imageGenerationConfig": {
+            "numberOfImages": 1,
+            "quality": "standard",
+            "cfgScale": 8.0,
+            "height": 512,
+            "width": 512,
+            "seed": seed,
+        },
+    }
+
+    request = json.dumps(native_request)
+
+    response = client.invoke_model(modelId=model_id, body=request)
+
+    model_response = json.loads(response["body"].read())
+
+    base64_image_data = model_response["images"][0]
+    
+    # i, output_dir = 1, "output"
+    # if not os.path.exists(output_dir):
+    #     os.makedirs(output_dir)
+    # while os.path.exists(os.path.join(output_dir, f"titan_{i}.png")):
+    #     i += 1
+
+    # image_data = base64.b64decode(base64_image_data)
+
+    # image_path = os.path.join(output_dir, f"titan_{i}.png")
+    # with open(image_path, "wb") as file:
+    #     file.write(image_data)
+        
+    return {"image": base64_image_data}
 
 @app.get("/image")
 async def get_image(room_id: str, client_id: str | None = None):
