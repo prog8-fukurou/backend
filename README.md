@@ -70,9 +70,9 @@ masterに選ばれたユーザーのIDを送信
 
 #### user-init:{user_name}
 
-**サーバー** → クライアント
+**クライアント** → サーバー
 
-ユーザー参加時に「client_id:user_name」の形式で送信
+受け取った情報をもとに、「client_id:user_name」の形式でサーバーからクライアントへ送信
 
 ##### game-end
 
