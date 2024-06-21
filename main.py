@@ -5,6 +5,10 @@ import base64
 import json
 import boto3
 import os
+from typing import Union
+from pydantic import BaseModel
+
+from utils.aws import aws_generate_image, aws_generate_text
 
 app = FastAPI()
 app.add_middleware(
@@ -118,13 +122,20 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: int 
         await room.broadcast_message(f"game-interrupted")
         rooms.pop(room_id)
 
+class PromptMaterial(BaseModel):
+    purpose: str | None
+    category: str | None
+    overnight: str | None
+    background_color: str | None
+    belongings: str | None
+
 @app.post("/prompt")
-async def generate_text(purpose: str | None = None, category: str | None = None, overnight: bool | None = None, background_color: str | None = None, belongings: str | None = None):
-    if purpose is None and category is None and overnight is None and background_color is None and belongings is None:
+async def generate_text(prompt: PromptMaterial):
+    if prompt.purpose is None and prompt.category is None and prompt.overnight is None and prompt.belongings is None:
         raise HTTPException(status_code=422, detail="Please specify at least one parameter.")
     # StreamResponseにしたい
     # https://engineers.safie.link/entry/2022/11/14/fastapi-streaming-response
-    text = generate_text(purpose, category, overnight, background_color, belongings)
+    text = aws_generate_text(prompt)
     return text
 
 @app.post("/image")
