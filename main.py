@@ -1,4 +1,5 @@
 from fastapi import FastAPI, WebSocket, WebSocketException, WebSocketDisconnect, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import random
 import base64
 import json
@@ -6,6 +7,13 @@ import boto3
 import os
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 class ConnectionManager:
     def __init__(self):
