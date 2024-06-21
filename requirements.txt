@@ -4,3 +4,4 @@ httpx==0.23.3
 pytest==7.2.1
 websockets
 boto3
+python-multipart
