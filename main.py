@@ -94,6 +94,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: int 
         rooms[room_id] = Room(room_id)
     room = rooms[room_id]
     room.add_player(client_id)
+    await room.broadcast_message(f"user-join:{len(room.players)}")
 
     try:
         while True:
@@ -103,7 +104,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: int 
                     await room.broadcast_message(f"{client_id}:{msg.split(':')[1]}")
                 case "user-ready":
                     room.readied.add(client_id)
-                    if len(room.readied) == len(room.players):
+                    if len(room.readied) == 4:
                         master_index = random.randint(0, len(room.players) - 1)
                         room.master = list(room.players)[master_index]
                         await room.broadcast_message(f"game-start:{room.master}")
