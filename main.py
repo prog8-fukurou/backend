@@ -169,7 +169,7 @@ async def generate_text(prompt: PromptMaterial):
 
 @app.post("/image")
 async def generate_image(prompt: str):
-    client = boto3.client(service_name="bedrock-runtime", region_name="us-east-1")
+    client = boto3.client(service_name="bedrock-runtime", region_name = os.environ['AWS_DEFAULT_REGION'])
     model_id = "amazon.titan-image-generator-v1"
     seed = random.randint(0, 2147483647)
     # Format the request payload using the model's native structure.
@@ -222,4 +222,4 @@ async def post_result(room_id: str, image: UploadFile = File()):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=80, reload=True)
