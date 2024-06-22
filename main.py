@@ -141,7 +141,7 @@ async def generate_text(prompt: PromptMaterial):
 
 @app.post("/image")
 async def generate_image(prompt: str):
-    client = boto3.client(service_name="bedrock-runtime", region_name="us-west-2")
+    client = boto3.client(service_name="bedrock-runtime", region_name = os.environ['AWS_DEFAULT_REGION'])
     model_id = "amazon.titan-image-generator-v1"
     seed = random.randint(0, 2147483647)
     # Format the request payload using the model's native structure.
