@@ -7,6 +7,7 @@ import boto3
 import os
 from typing import Union
 from pydantic import BaseModel
+from botocore.exceptions import ClientError
 
 from utils.aws import aws_generate_image, aws_generate_text
 
@@ -134,6 +135,33 @@ class PromptMaterial(BaseModel):
 async def generate_text(prompt: PromptMaterial):
     if prompt.purpose is None and prompt.category is None and prompt.overnight is None and prompt.belongings is None:
         raise HTTPException(status_code=422, detail="Please specify at least one parameter.")
+    client = boto3.client(service_name="bedrock-runtime", region_name="us-east-1")
+    model_id = "anthropic.claude-3-haiku-20240307-v1:0"
+    # Start a conversation with the user message.
+    user_message = "この旅行の持ち物を教えてください"
+    conversation = [
+        {
+            "role": "user",
+            "content": [{"text": user_message}],
+        }
+    ]
+
+    try:
+        # Send the message to the model, using a basic inference configuration.
+        response = client.converse(
+            modelId=model_id,
+            messages=conversation,
+            inferenceConfig={"maxTokens": 300, "temperature": 0.5, "topP": 0.9},
+        )
+
+        # Extract and print the response text.
+        response_text = response["output"]["message"]["content"][0]["text"]
+        print(response_text)
+
+    except (ClientError, Exception) as e:
+        print(f"ERROR: Can't invoke '{model_id}'. Reason: {e}")
+        exit(1)
+
     # StreamResponseにしたい
     # https://engineers.safie.link/entry/2022/11/14/fastapi-streaming-response
     text = aws_generate_text(prompt)
