@@ -109,6 +109,11 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: int 
                             if len(room.readied) == 2:
                                 room.master = client_id
                                 await room.broadcast_message(f"game-start:{room.master}")
+                        else:
+                            if len(room.readied) == 2:
+                                master_index = random.randint(0, len(room.players) - 1)
+                                room.master = list(room.players)[master_index]
+                                await room.broadcast_message(f"game-start:{room.master}")
                     else:
                         if len(room.readied) == 4:
                             master_index = random.randint(0, len(room.players) - 1)
