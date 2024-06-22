@@ -1,7 +1,7 @@
 version: '3'
 services:
   solufit-hr-api:
-    container_name: solufit-hr-api
+    container_name: fukurou-api
     build:
       context: .
       dockerfile: ./docker/Dockerfile
