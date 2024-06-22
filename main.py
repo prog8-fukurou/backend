@@ -105,10 +105,21 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: int 
                     await room.broadcast_message(f"{client_id}:{msg.split(':')[1]}")
                 case "user-ready":
                     room.readied.add(client_id)
-                    if len(room.readied) == 4:
-                        master_index = random.randint(0, len(room.players) - 1)
-                        room.master = list(room.players)[master_index]
-                        await room.broadcast_message(f"game-start:{room.master}")
+                    if ":" in msg:
+                        if msg.split(":")[1] == "debug:master":
+                            if len(room.readied) == 2:
+                                room.master = client_id
+                                await room.broadcast_message(f"game-start:{room.master}")
+                        else:
+                            if len(room.readied) == 2:
+                                master_index = random.randint(0, len(room.players) - 1)
+                                room.master = list(room.players)[master_index]
+                                await room.broadcast_message(f"game-start:{room.master}")
+                    else:
+                        if len(room.readied) == 4:
+                            master_index = random.randint(0, len(room.players) - 1)
+                            room.master = list(room.players)[master_index]
+                            await room.broadcast_message(f"game-start:{room.master}")
                 case "game-end":
                     flag = room.add_gameend_player(client_id)
                     if flag:
@@ -128,7 +139,7 @@ class PromptMaterial(BaseModel):
     purpose: str | None
     category: str | None
     overnight: str | None
-    background_color: str | None
+    backgroundColor: str | None
     belongings: str | None
 
 class ResponseMaterial(BaseModel):
