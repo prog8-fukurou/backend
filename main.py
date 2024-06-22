@@ -148,13 +148,14 @@ class ResponseMaterial(BaseModel):
     travel_schedule: list[str] | None
     suggested_sightseeing_spots: list[str] | None
     travel_plan_description: str | None
-    belongings: str | None
+    belongings: list[str] | None
+    background_color: str | None
     
 @app.post("/prompt")
-async def generate_text(prompt: PromptMaterial, try_count: int = 0):
+async def generate_text(prompt: PromptMaterial, try_count: int = 0) -> ResponseMaterial:
     if prompt.purpose is None and prompt.category is None and prompt.overnight is None and prompt.belongings is None:
         raise HTTPException(status_code=422, detail="Please specify at least one parameter.")
-    client = boto3.client(service_name="bedrock-runtime", region_name = os.environ['AWS_DEFAULT_REGION'])
+    client = boto3.client(service_name="bedrock-runtime", region_name="us-west-2")
     model_id = "anthropic.claude-3-sonnet-20240229-v1:0"
     # Start a conversation with the user message.
     user_message = f"Human:\nあなたは優秀なアシスタントです。\n以下に旅行の資料を添付します。\n\n"
@@ -180,17 +181,16 @@ async def generate_text(prompt: PromptMaterial, try_count: int = 0):
 
         # Extract and print the response text.
         response_text = response["output"]["message"]["content"][0]["text"]
-        print(response_text)
         try:
             json_response = json.loads(response_text)
-            prompt_material_response = ResponseMaterial(**json_response)
+            prompt_material_response = ResponseMaterial(**json_response, background_color=prompt.backgroundColor)
         except (json.JSONDecodeError, KeyError) as e:
             print(f"Error parsing response: {e}")
             if try_count < 3:
                 return await generate_text(prompt, try_count + 1)
             else:
                 raise HTTPException(status_code=500, detail="Failed to generate valid text after multiple attempts.")
-        return response_text
+        return prompt_material_response
 
     except (ClientError, Exception) as e:
         print(f"ERROR: Can't invoke '{model_id}'. Reason: {e}")
