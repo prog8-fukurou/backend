@@ -127,7 +127,7 @@ class PromptMaterial(BaseModel):
     purpose: str | None
     category: str | None
     overnight: str | None
-    background_color: str | None
+    backgroundColor: str | None
     belongings: str | None
 
 @app.post("/prompt")
