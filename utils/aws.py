@@ -1,5 +1,6 @@
 import boto3
 import json
+from pydantic import BaseModel
 
 def sample():
     ### 以下サンプルコードです
@@ -23,8 +24,24 @@ def sample():
     # text
     print(response_body.get('completion'))
 
-def generate_text(prompt: str):
-    pass
+class PromptMaterial(BaseModel):
+    purpose: str | None
+    category: str | None
+    overnight: str | None
+    background_color: str | None
+    belongings: str | None
 
-def generate_image(prompt: str):
+def aws_generate_text(prompt: PromptMaterial):
+    text = ""
+    if prompt.purpose is not None:
+        text += f"{prompt.purpose}を目的の旅行です。"
+    if prompt.category is not None:
+        text += f"{prompt.category}的な場所に行ってみるのはいかがでしょうか。"
+    if prompt.overnight is not None:
+        text += f"{'泊まる予定です。' if prompt.overnight == 'True' else '日帰りする予定です。'}"
+    if prompt.belongings is not None:
+        text += f"持ち物は{prompt.belongings}を持っていくといいかもしれません"
+    return text
+
+def aws_generate_image(prompt: str):
     pass

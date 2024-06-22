@@ -1,12 +1,23 @@
-from fastapi import FastAPI, WebSocket, WebSocketException, WebSocketDisconnect, UploadFile, File
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, WebSocket, WebSocketException, WebSocketDisconnect, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import random
 import base64
 import json
 import boto3
 import os
+from typing import Union
+from pydantic import BaseModel
+
+from utils.aws import aws_generate_image, aws_generate_text
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 class ConnectionManager:
     def __init__(self):
@@ -83,6 +94,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: int 
         rooms[room_id] = Room(room_id)
     room = rooms[room_id]
     room.add_player(client_id)
+    await room.broadcast_message(f"user-join:{len(room.players)}")
 
     try:
         while True:
@@ -92,7 +104,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: int 
                     await room.broadcast_message(f"{client_id}:{msg.split(':')[1]}")
                 case "user-ready":
                     room.readied.add(client_id)
-                    if len(room.readied) == len(room.players):
+                    if len(room.readied) == 4:
                         master_index = random.randint(0, len(room.players) - 1)
                         room.master = list(room.players)[master_index]
                         await room.broadcast_message(f"game-start:{room.master}")
@@ -111,13 +123,20 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: int 
         await room.broadcast_message(f"game-interrupted")
         rooms.pop(room_id)
 
+class PromptMaterial(BaseModel):
+    purpose: str | None
+    category: str | None
+    overnight: str | None
+    background_color: str | None
+    belongings: str | None
+
 @app.post("/prompt")
-async def generate_text(purpose: str | None = None, category: str | None = None, overnight: bool | None = None, background_color: str | None = None, belongings: str | None = None):
-    if purpose is None and category is None and overnight is None and background_color is None and belongings is None:
-        raise HTMLResponse(status_code=422, content="Please specify at least one parameter.")
+async def generate_text(prompt: PromptMaterial):
+    if prompt.purpose is None and prompt.category is None and prompt.overnight is None and prompt.belongings is None:
+        raise HTTPException(status_code=422, detail="Please specify at least one parameter.")
     # StreamResponseにしたい
     # https://engineers.safie.link/entry/2022/11/14/fastapi-streaming-response
-    text = generate_text(purpose, category, overnight, background_color, belongings)
+    text = aws_generate_text(prompt)
     return text
 
 @app.post("/image")
