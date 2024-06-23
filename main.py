@@ -171,28 +171,28 @@ async def generate_text(prompt: PromptMaterial, try_count: int = 0) -> ResponseM
         }
     ]
 
-        # Send the message to the model, using a basic inference configuration.
-        response = client.converse(
-            modelId=model_id,
-            messages=conversation,
-            inferenceConfig={"maxTokens": 2000, "temperature": 1.0, "topP": 0.9},
-        )
+    # Send the message to the model, using a basic inference configuration.
+    response = client.converse(
+        modelId=model_id,
+        messages=conversation,
+        inferenceConfig={"maxTokens": 2000, "temperature": 1.0, "topP": 0.9},
+    )
 
-        # Extract and print the response text.
-        response_text = response["output"]["message"]["content"][0]["text"]
-        try:
-            json_response = json.loads(response_text)
-            prompt_material_response = ResponseMaterial(
-                **json_response, 
-                backgroundColor=prompt.backgroundColor
-            )
-        except (json.JSONDecodeError, KeyError) as e:
-            print(f"Error parsing response: {e}")
-            if try_count < 4:
-                return await generate_text(prompt, try_count + 1)
-            else:
-                raise HTTPException(status_code=500, detail="Failed to generate valid text after multiple attempts.")
-        return prompt_material_response
+    # Extract and print the response text.
+    response_text = response["output"]["message"]["content"][0]["text"]
+    try:
+        json_response = json.loads(response_text)
+        prompt_material_response = ResponseMaterial(
+            **json_response, 
+            backgroundColor=prompt.backgroundColor
+        )
+    except (json.JSONDecodeError, KeyError) as e:
+        print(f"Error parsing response: {e}")
+        if try_count < 4:
+            return await generate_text(prompt, try_count + 1)
+        else:
+            raise HTTPException(status_code=500, detail="Failed to generate valid text after multiple attempts.")
+    return prompt_material_response
 
     # StreamResponseにしたい
     # https://engineers.safie.link/entry/2022/11/14/fastapi-streaming-response
