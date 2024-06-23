@@ -123,7 +123,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, room_id: int 
                 case "game-end":
                     flag = room.add_gameend_player(client_id)
                     if flag:
-                        await room.broadcast_message("vote-start")
+                        await room.broadcast_message("vote-start:")
                 case "vote-end":
                     #flag = room.add_voteend_player(client_id)
                     #if flag:
