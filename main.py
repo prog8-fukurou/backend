@@ -154,7 +154,7 @@ class ResponseMaterial(BaseModel):
 async def generate_text(prompt: PromptMaterial, try_count: int = 0):
     if prompt.purpose is None and prompt.category is None and prompt.overnight is None and prompt.belongings is None:
         raise HTTPException(status_code=422, detail="Please specify at least one parameter.")
-    client = boto3.client(service_name="bedrock-runtime", region_name = os.environ['AWS_DEFAULT_REGION'])
+    client = boto3.client(service_name="bedrock-runtime", region_name = "us-west-2")
     model_id = "anthropic.claude-3-sonnet-20240229-v1:0"
     # Start a conversation with the user message.
     user_message = f"Human:\nあなたは優秀なアシスタントです。\n以下に旅行の資料を添付します。\n\n"
@@ -204,7 +204,7 @@ async def generate_image(prompt: ResponseMaterial):
     prompt_material_response = prompt
     if prompt_material_response.travel_plan_name is None and prompt_material_response.travel_place is None and prompt_material_response.travel_schedule is None and prompt_material_response.suggested_sightseeing_spots is None and prompt_material_response.travel_plan_description is None and prompt_material_response.belongings is None:
         raise HTTPException(status_code=422, detail="Please specify at least one parameter.")
-    client = boto3.client(service_name="bedrock-runtime", region_name = os.environ['AWS_DEFAULT_REGION'])
+    client = boto3.client(service_name="bedrock-runtime", region_name = "us-west-2")
     user_message_ja = f"{prompt_material_response.travel_plan_name}という旅行で、{prompt_material_response.travel_place}という観光地を訪れます。ただし、{prompt_material_response.travel_place}には{','.join(prompt_material_response.suggested_sightseeing_spots)}という観光地があります。\n\n以上の情報を踏まえて、{prompt_material_response.travel_place}のイメージ画像を生成してください。"
     model_id = "anthropic.claude-3-sonnet-20240229-v1:0"
     user_message = f"Human:\nYou are an excellent assistant.\nPlease transrate sentences from Japanese to English.\n Be careful not to change the meaning of words when translating.\n\n<sentences>\n{user_message_ja}</sentences>\n\nAssistant:\n"
@@ -244,8 +244,8 @@ async def generate_image(prompt: ResponseMaterial):
     #         "numberOfImages": 1,
     #         "quality": "standard",
     #         "cfgScale": 8.0,
-    #         "height": 512,
-    #         "width": 512,
+    #         "height": 768,
+    #         "width": 1024,
     #         "seed": seed,
     #     },
     # }
@@ -255,6 +255,8 @@ async def generate_image(prompt: ResponseMaterial):
         "seed": seed,
         "cfg_scale": 10,
         "steps": 30,
+        "height": 768,
+        "width": 1024
     }
 
     request = json.dumps(native_request)
