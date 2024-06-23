@@ -1,9 +1,9 @@
 {
-    "taskDefinitionArn": "arn:aws:ecs:us-west-2:609780226602:task-definition/fukurou-backend:7",
+    "taskDefinitionArn": "arn:aws:ecs:us-west-2:609780226602:task-definition/fukurou-backend:15",
     "containerDefinitions": [
         {
             "name": "fastapi",
-            "image": "609780226602.dkr.ecr.us-west-2.amazonaws.com/fukurou:d0d2bb8da4153b662d5ab31ae85ad0dd20a6efe9",
+            "image": "609780226602.dkr.ecr.us-west-2.amazonaws.com/fukurou:de652cd80ced6ec03f344a2ee626bc774e8dfcb5",
             "cpu": 0,
             "portMappings": [
                 {
@@ -32,15 +32,17 @@
                     "awslogs-create-group": "true",
                     "awslogs-region": "us-west-2",
                     "awslogs-stream-prefix": "ecs"
-                }
+                },
+                "secretOptions": []
             },
             "systemControls": []
         }
     ],
     "family": "fukurou-backend",
+    "taskRoleArn": "arn:aws:iam::609780226602:role/ecsTaskExecutionRole",
     "executionRoleArn": "arn:aws:iam::609780226602:role/ecsTaskExecutionRole",
     "networkMode": "awsvpc",
-    "revision": 7,
+    "revision": 15,
     "volumes": [],
     "status": "ACTIVE",
     "requiresAttributes": [
@@ -55,6 +57,9 @@
         },
         {
             "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.task-iam-role"
         },
         {
             "name": "ecs.capability.execution-role-ecr-pull"
@@ -83,7 +88,7 @@
         "cpuArchitecture": "X86_64",
         "operatingSystemFamily": "LINUX"
     },
-    "registeredAt": "2024-06-23T01:23:25.257Z",
+    "registeredAt": "2024-06-23T05:58:44.642Z",
     "registeredBy": "arn:aws:sts::609780226602:assumed-role/WSParticipantRole/Participant",
     "tags": []
 }
