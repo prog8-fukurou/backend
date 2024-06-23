@@ -171,7 +171,6 @@ async def generate_text(prompt: PromptMaterial, try_count: int = 0) -> ResponseM
         }
     ]
 
-    try:
         # Send the message to the model, using a basic inference configuration.
         response = client.converse(
             modelId=model_id,
@@ -195,10 +194,6 @@ async def generate_text(prompt: PromptMaterial, try_count: int = 0) -> ResponseM
                 raise HTTPException(status_code=500, detail="Failed to generate valid text after multiple attempts.")
         return prompt_material_response
 
-    except (ClientError, Exception) as e:
-        print(f"ERROR: Can't invoke '{model_id}'. Reason: {e}")
-        exit(1)
-
     # StreamResponseにしたい
     # https://engineers.safie.link/entry/2022/11/14/fastapi-streaming-response
 
@@ -218,21 +213,16 @@ async def generate_image(prompt: ResponseMaterial):
         }
     ]
     
-    try:
-        # Send the message to the model, using a basic inference configuration.
-        response = client.converse(
-            modelId=model_id,
-            messages=conversation,
-            inferenceConfig={"maxTokens": 2000, "temperature": 0.5, "topP": 0.9},
-        )
+    # Send the message to the model, using a basic inference configuration.
+    response = client.converse(
+        modelId=model_id,
+        messages=conversation,
+        inferenceConfig={"maxTokens": 2000, "temperature": 0.5, "topP": 0.9},
+    )
 
-        # Extract and print the response text.
-        response_text = response["output"]["message"]["content"][0]["text"]
-    
-    except (ClientError, Exception) as e:
-        print(f"ERROR: Can't invoke '{model_id}'. Reason: {e}")
-        print("Using original Japanese prompt.")
-        response_text = user_message_ja
+    # Extract and print the response text.
+    response_text = response["output"]["message"]["content"][0]["text"]
+
     
     
     # model_id = "amazon.titan-image-generator-v1"
@@ -240,19 +230,6 @@ async def generate_image(prompt: ResponseMaterial):
     seed = random.randint(0, 2147483647)
     user_message = response_text
     print(f"user_message: {user_message}")
-    # Format the request payload using the model's native structure.
-    # native_request = {
-    #     "taskType": "TEXT_IMAGE",
-    #     "textToImageParams": {"text": user_message},
-    #     "imageGenerationConfig": {
-    #         "numberOfImages": 1,
-    #         "quality": "standard",
-    #         "cfgScale": 8.0,
-    #         "height": 768,
-    #         "width": 1024,
-    #         "seed": seed,
-    #     },
-    # }
     native_request = {
         "text_prompts": [{"text": user_message}],
         "style_preset": "photographic",
