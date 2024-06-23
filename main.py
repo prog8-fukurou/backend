@@ -228,7 +228,8 @@ async def generate_image(prompt: ResponseMaterial):
     
     except (ClientError, Exception) as e:
         print(f"ERROR: Can't invoke '{model_id}'. Reason: {e}")
-        exit(1)   
+        print("Using original Japanese prompt.")
+        response_text = user_message_ja
     
     
     # model_id = "amazon.titan-image-generator-v1"
