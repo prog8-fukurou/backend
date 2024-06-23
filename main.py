@@ -271,6 +271,11 @@ async def post_result(room_id: str, image: UploadFile = File()):
     generated_images[room_id] = image
     return "OK"
 
+@app.get("")
+async def get():
+    return "Hello, World!"
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=80, reload=True)
