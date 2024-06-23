@@ -149,7 +149,7 @@ class ResponseMaterial(BaseModel):
     suggested_sightseeing_spots: list[str] | None
     travel_plan_description: str | None
     belongings: list[str] | None
-    background_color: str | None
+    backgroundColor: str | None
     
 @app.post("/prompt")
 async def generate_text(prompt: PromptMaterial, try_count: int = 0) -> ResponseMaterial:
@@ -183,7 +183,10 @@ async def generate_text(prompt: PromptMaterial, try_count: int = 0) -> ResponseM
         response_text = response["output"]["message"]["content"][0]["text"]
         try:
             json_response = json.loads(response_text)
-            prompt_material_response = ResponseMaterial(**json_response, background_color=prompt.backgroundColor)
+            prompt_material_response = ResponseMaterial(
+                **json_response, 
+                backgroundColor=prompt.backgroundColor
+            )
         except (json.JSONDecodeError, KeyError) as e:
             print(f"Error parsing response: {e}")
             if try_count < 4:
