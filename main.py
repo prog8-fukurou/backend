@@ -205,10 +205,36 @@ async def generate_image(prompt: ResponseMaterial):
     if prompt_material_response.travel_plan_name is None and prompt_material_response.travel_place is None and prompt_material_response.travel_schedule is None and prompt_material_response.suggested_sightseeing_spots is None and prompt_material_response.travel_plan_description is None and prompt_material_response.belongings is None:
         raise HTTPException(status_code=422, detail="Please specify at least one parameter.")
     client = boto3.client(service_name="bedrock-runtime", region_name = os.environ['AWS_DEFAULT_REGION'])
+    user_message_ja = f"{prompt_material_response.travel_plan_name}という旅行で、{prompt_material_response.travel_place}という観光地を訪れます。ただし、{prompt_material_response.travel_place}には{','.join(prompt_material_response.suggested_sightseeing_spots)}という観光地があります。\n\n以上の情報を踏まえて、{prompt_material_response.travel_place}のイメージ画像を生成してください。"
+    model_id = "anthropic.claude-3-sonnet-20240229-v1:0"
+    user_message = f"Human:\nYou are an excellent assistant.\nPlease transrate sentences from Japanese to English.\n Be careful not to change the meaning of words when translating.\n\n<sentences>\n{user_message_ja}</sentences>\n\nAssistant:\n"
+    conversation = [
+        {
+            "role": "user",
+            "content": [{"text": user_message}],
+        }
+    ]
+    
+    try:
+        # Send the message to the model, using a basic inference configuration.
+        response = client.converse(
+            modelId=model_id,
+            messages=conversation,
+            inferenceConfig={"maxTokens": 2000, "temperature": 0.5, "topP": 0.9},
+        )
+
+        # Extract and print the response text.
+        response_text = response["output"]["message"]["content"][0]["text"]
+    
+    except (ClientError, Exception) as e:
+        print(f"ERROR: Can't invoke '{model_id}'. Reason: {e}")
+        exit(1)   
+    
+    
     # model_id = "amazon.titan-image-generator-v1"
     model_id = "stability.stable-diffusion-xl-v1"
-    user_message = f"{prompt_material_response.travel_plan_name}という旅行で、{prompt_material_response.travel_place}という観光地を訪れます。ただし、{prompt_material_response.travel_place}には{','.join(prompt_material_response.suggested_sightseeing_spots)}という観光地があります。\n\n以上の情報を踏まえて、{prompt_material_response.travel_place}のイメージ画像を生成してください。"
     seed = random.randint(0, 2147483647)
+    user_message = response_text
     print(f"user_message: {user_message}")
     # Format the request payload using the model's native structure.
     # native_request = {
