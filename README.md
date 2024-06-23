@@ -26,7 +26,7 @@ python3 main.py (上のコマンドが実行できない場合)
 | -- | -- | -- |
 | purpose | str | optional: 目的 |
 | category | str | optional: リゾート、温泉地 etc |
-| overnight | bool | optional: 泊り(True) 日帰り(False) |
+| overnight | str | optional: 泊り(True) 日帰り(False) |
 | background_color | str | optional: ex. #FFFFFF |
 | belongings | str | optional: 持ち物 |
 
