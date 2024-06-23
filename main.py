@@ -52,7 +52,7 @@ class Room:
 
     def add_gameend_player(self, client_id):
         self.gameend_players.add(client_id)
-        if len(self.gameend_players) == len(self.players):
+        if len(self.gameend_players) == 3:
             return True
         else:
             return False
@@ -60,7 +60,7 @@ class Room:
     def add_voteend_player(self, client_id, vote_id: str):
         self.voteend_players.add(client_id)
         self.voted_players.append(vote_id)
-        if len(self.voteend_players) == len(self.players):
+        if len(self.voteend_players) == 1:
             return True
         else:
             return False
