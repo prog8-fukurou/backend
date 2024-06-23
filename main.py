@@ -18,6 +18,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+client = boto3.client("bedrock-runtime", region_name="us-west-2")
 
 
 class ConnectionManager:
@@ -52,7 +53,7 @@ class Room:
 
     def add_gameend_player(self, client_id):
         self.gameend_players.add(client_id)
-        if len(self.gameend_players) == len(self.players):
+        if len(self.gameend_players) == 3:
             return True
         else:
             return False
@@ -60,7 +61,7 @@ class Room:
     def add_voteend_player(self, client_id, vote_id: str):
         self.voteend_players.add(client_id)
         self.voted_players.append(vote_id)
-        if len(self.voteend_players) == len(self.players):
+        if len(self.voteend_players) == 1:
             return True
         else:
             return False
@@ -155,7 +156,7 @@ class ResponseMaterial(BaseModel):
 async def generate_text(prompt: PromptMaterial, try_count: int = 0) -> ResponseMaterial:
     if prompt.purpose is None and prompt.category is None and prompt.overnight is None and prompt.belongings is None:
         raise HTTPException(status_code=422, detail="Please specify at least one parameter.")
-    client = boto3.client(service_name="bedrock-runtime", region_name="us-west-2")
+    
     model_id = "anthropic.claude-3-sonnet-20240229-v1:0"
     # Start a conversation with the user message.
     user_message = f"Human:\nあなたは優秀なアシスタントです。\n以下に旅行の資料を添付します。\n\n"
@@ -171,28 +172,33 @@ async def generate_text(prompt: PromptMaterial, try_count: int = 0) -> ResponseM
         }
     ]
 
-    # Send the message to the model, using a basic inference configuration.
-    response = client.converse(
-        modelId=model_id,
-        messages=conversation,
-        inferenceConfig={"maxTokens": 2000, "temperature": 1.0, "topP": 0.9},
-    )
-
-    # Extract and print the response text.
-    response_text = response["output"]["message"]["content"][0]["text"]
     try:
-        json_response = json.loads(response_text)
-        prompt_material_response = ResponseMaterial(
-            **json_response, 
-            backgroundColor=prompt.backgroundColor
+        # Send the message to the model, using a basic inference configuration.
+        response = client.converse(
+            modelId=model_id,
+            messages=conversation,
+            inferenceConfig={"maxTokens": 2000, "temperature": 1.0, "topP": 0.9},
         )
-    except (json.JSONDecodeError, KeyError) as e:
-        print(f"Error parsing response: {e}")
-        if try_count < 4:
-            return await generate_text(prompt, try_count + 1)
-        else:
-            raise HTTPException(status_code=500, detail="Failed to generate valid text after multiple attempts.")
-    return prompt_material_response
+
+        # Extract and print the response text.
+        response_text = response["output"]["message"]["content"][0]["text"]
+        try:
+            json_response = json.loads(response_text)
+            prompt_material_response = ResponseMaterial(
+                **json_response, 
+                backgroundColor=prompt.backgroundColor
+            )
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"Error parsing response: {e}")
+            if try_count < 4:
+                return await generate_text(prompt, try_count + 1)
+            else:
+                raise HTTPException(status_code=500, detail="Failed to generate valid text after multiple attempts.")
+        return prompt_material_response
+
+    except (ClientError, Exception) as e:
+        print(f"ERROR: Can't invoke '{model_id}'. Reason: {e}")
+        exit(1)
 
     # StreamResponseにしたい
     # https://engineers.safie.link/entry/2022/11/14/fastapi-streaming-response
@@ -202,7 +208,6 @@ async def generate_image(prompt: ResponseMaterial):
     prompt_material_response = prompt
     if prompt_material_response.travel_plan_name is None or prompt_material_response.travel_place is None or prompt_material_response.travel_schedule is None or prompt_material_response.suggested_sightseeing_spots is None:
         raise HTTPException(status_code=422, detail="All fields are required.")
-    client = boto3.client(service_name="bedrock-runtime", region_name = "us-west-2")
     user_message_ja = f"{prompt_material_response.travel_plan_name}という旅行で、{prompt_material_response.travel_place}という観光地を訪れます。ただし、{prompt_material_response.travel_place}には{','.join(prompt_material_response.suggested_sightseeing_spots)}という観光地があります。\n\n以上の情報を踏まえて、{prompt_material_response.travel_place}のイメージ画像を生成してください。"
     model_id = "anthropic.claude-3-sonnet-20240229-v1:0"
     user_message = f"Human:\nYou are an excellent assistant.\nPlease transrate sentences from Japanese to English.\n Be careful not to change the meaning of words when translating.\n\n<sentences>\n{user_message_ja}</sentences>\n\nAssistant:\n"
@@ -213,16 +218,21 @@ async def generate_image(prompt: ResponseMaterial):
         }
     ]
     
-    # Send the message to the model, using a basic inference configuration.
-    response = client.converse(
-        modelId=model_id,
-        messages=conversation,
-        inferenceConfig={"maxTokens": 2000, "temperature": 0.5, "topP": 0.9},
-    )
+    try:
+        # Send the message to the model, using a basic inference configuration.
+        response = client.converse(
+            modelId=model_id,
+            messages=conversation,
+            inferenceConfig={"maxTokens": 2000, "temperature": 0.5, "topP": 0.9},
+        )
 
-    # Extract and print the response text.
-    response_text = response["output"]["message"]["content"][0]["text"]
-
+        # Extract and print the response text.
+        response_text = response["output"]["message"]["content"][0]["text"]
+    
+    except (ClientError, Exception) as e:
+        print(f"ERROR: Can't invoke '{model_id}'. Reason: {e}")
+        print("Using original Japanese prompt.")
+        response_text = user_message_ja
     
     
     # model_id = "amazon.titan-image-generator-v1"
@@ -230,6 +240,19 @@ async def generate_image(prompt: ResponseMaterial):
     seed = random.randint(0, 2147483647)
     user_message = response_text
     print(f"user_message: {user_message}")
+    # Format the request payload using the model's native structure.
+    # native_request = {
+    #     "taskType": "TEXT_IMAGE",
+    #     "textToImageParams": {"text": user_message},
+    #     "imageGenerationConfig": {
+    #         "numberOfImages": 1,
+    #         "quality": "standard",
+    #         "cfgScale": 8.0,
+    #         "height": 768,
+    #         "width": 1024,
+    #         "seed": seed,
+    #     },
+    # }
     native_request = {
         "text_prompts": [{"text": user_message}],
         "style_preset": "photographic",
