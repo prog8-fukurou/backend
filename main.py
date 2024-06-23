@@ -161,7 +161,7 @@ async def generate_text(prompt: PromptMaterial, try_count: int = 0) -> ResponseM
     user_message = f"Human:\nあなたは優秀なアシスタントです。\n以下に旅行の資料を添付します。\n\n"
     user_message += f"<document>\n旅の目的:{prompt.purpose}\nどんな場所か:{prompt.category}\n日帰りか泊まりか:{(lambda x: '日帰り' if prompt.overnight == '日帰り' else '3泊4日')}\n持ち物:{prompt.belongings}</document>\n\n"
     user_message += f"以上の資料をもとに、旅行のプラン名、目的地の名前、持ち物、旅行スケジュール、おすすめの観光スポット、プランの説明を考え、'travel_plan_name','travel_place','travel_schedule','suggested_sightseeing_spots','travel_plan_description','belongings'をキーとしたJSON形式で生成してください。\n\n"
-    user_message += f"ただし、旅行スケジュールとおすすめの観光スポットは文字列のリスト形式にしてください。目的地や観光スポットは固有名詞にしてください。また、目的地や観光スポットは実在するものでも、架空のものでも、構いません。JSONデータ以外は生成しないでください。"
+    user_message += f"ただし、旅行スケジュールとおすすめの観光スポットと持ち物は文字列のリスト形式にしてください。目的地や観光スポットは固有名詞にしてください。また、目的地や観光スポットは実在するものでも、架空のものでも、構いません。JSONデータ以外は生成しないでください。"
     user_message += f"Assistant:\n"
     
     conversation = [
@@ -186,7 +186,7 @@ async def generate_text(prompt: PromptMaterial, try_count: int = 0) -> ResponseM
             prompt_material_response = ResponseMaterial(**json_response, background_color=prompt.backgroundColor)
         except (json.JSONDecodeError, KeyError) as e:
             print(f"Error parsing response: {e}")
-            if try_count < 3:
+            if try_count < 4:
                 return await generate_text(prompt, try_count + 1)
             else:
                 raise HTTPException(status_code=500, detail="Failed to generate valid text after multiple attempts.")
